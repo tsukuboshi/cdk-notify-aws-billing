@@ -1,5 +1,15 @@
+import boto3
 from datetime import datetime, timedelta, date
 from typing import Tuple
+
+
+def main() -> Tuple[str, str]:
+    client = boto3.client('ce', region_name='us-east-1')
+
+    total_billing = get_total_billing(client)
+    service_billings = get_service_billings(client)
+    (title, detail) = get_message(total_billing, service_billings)
+    return (title, detail)
 
 
 def get_total_billing(client) -> dict:
