@@ -17,7 +17,6 @@
   "context": {
     "sysName": "cm",
     "notifyDaysInterval": "1",
-    "lineAccessTokenPath": "/notify-aws-billing/line-access-token",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": ["aws", "aws-cn"],
