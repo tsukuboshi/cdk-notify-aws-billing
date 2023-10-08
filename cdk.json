@@ -17,6 +17,9 @@
     ]
   },
   "context": {
+    "sysName": "cm",
+    "notifyDaysInterval": "1",
+    "slackWebhookUrlPath": "/notify-aws-billing/slack-webhook-url",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [
