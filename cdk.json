@@ -1,9 +1,7 @@
 {
   "app": "npx ts-node --prefer-ts-exts bin/notify-aws-billing.ts",
   "watch": {
-    "include": [
-      "**"
-    ],
+    "include": ["**"],
     "exclude": [
       "README.md",
       "cdk*.json",
@@ -19,13 +17,10 @@
   "context": {
     "sysName": "cm",
     "notifyDaysInterval": "1",
-    "slackWebhookUrlPath": "/notify-aws-billing/slack-webhook-url",
+    "lineAccessTokenPath": "/notify-aws-billing/line-access-token",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
-    "@aws-cdk/core:target-partitions": [
-      "aws",
-      "aws-cn"
-    ],
+    "@aws-cdk/core:target-partitions": ["aws", "aws-cn"],
     "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": true,
     "@aws-cdk/aws-ec2:uniqueImdsv2TemplateName": true,
     "@aws-cdk/aws-ecs:arnFormatIncludesClusterName": true,
