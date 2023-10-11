@@ -20,7 +20,16 @@ async function getTotalBilling() {
   };
 
   const response = await costExplorer.getCostAndUsage(params).promise();
+
+  if (!response.ResultsByTime || !response.ResultsByTime[0]) {
+    throw new Error('No ResultsByTime found');
+  }
+
   const results = response.ResultsByTime[0];
+
+  if (!results.TimePeriod || !results.Total || !results.Total.AmortizedCost || results.Total.AmortizedCost.Amount === undefined) {
+    throw new Error('Missing necessary fields in results');
+  }
 
   return {
     start: results.TimePeriod.Start,
@@ -45,6 +54,11 @@ async function getServiceBillings() {
   };
 
   const response = await costExplorer.getCostAndUsage(params).promise();
+
+  if (!response.ResultsByTime || !response.ResultsByTime[0] || !response.ResultsByTime[0].Groups) {
+    throw new Error('No ResultsByTime or Groups found');
+  }
+
   const items = response.ResultsByTime[0].Groups;
 
   return items.map((item: {Keys: Array<string>, Metrics: {AmortizedCost: {Amount: string}}}) => ({
