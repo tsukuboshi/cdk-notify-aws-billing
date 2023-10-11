@@ -4,6 +4,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
 
 export class NotifyAwsBillingStack extends Stack {
@@ -76,13 +77,29 @@ export class NotifyAwsBillingStack extends Stack {
       }
     );
 
-    // Lambda function
+    // // Lambda function (Node.js)
+    // const notifyAwsBillingFunction = new lambdaNodejs.NodejsFunction(
+    //   this,
+    //   "function",
+    //   {
+    //     functionName: `${sysName}-notify-aws-billing-function`,
+    //     entry: "lib/function-typescript/index.ts",
+    //     runtime: lambda.Runtime.NODEJS_18_X,
+    //     role: notifyAwsBillingRole,
+    //     timeout: Duration.seconds(10),
+    //     logRetention: 365,
+    //     environment: appAccessInfo,
+    //     paramsAndSecrets: paramsAndSecrets,
+    //   }
+    // );
+
+    // Lambda function (Python)
     const notifyAwsBillingFunction = new lambdaPython.PythonFunction(
       this,
       "function",
       {
         functionName: `${sysName}-notify-aws-billing-function`,
-        entry: "lib/function",
+        entry: "lib/function-python",
         runtime: lambda.Runtime.PYTHON_3_10,
         role: notifyAwsBillingRole,
         timeout: Duration.seconds(10),

@@ -1,14 +1,27 @@
-# Welcome to your CDK TypeScript project
+# linebot-aitutor
 
-This is a blank project for CDK development with TypeScript.
+## 概要
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+Slack/LINEのいずれかに対して、メッセージ形式でAWS利用料金を通知します。
 
-## Useful commands
+## 構成図
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+![diagram](./image/diagram.drawio.png)
+
+## デプロイ方法
+
+1. 通知対象のアプリに応じて、以下コマンドでCDKアプリをデプロイ
+
+- Slackの場合
+
+``` bash
+cdk deploy \
+  -c slackWebhookUrlPath=`/notify-aws-billing/slack-webhook-url`
+```
+
+- LINEの場合
+
+``` bash
+cdk deploy \
+  -c  lineAccessTokenPath=`/notify-aws-billing/line-access-token`
+```
