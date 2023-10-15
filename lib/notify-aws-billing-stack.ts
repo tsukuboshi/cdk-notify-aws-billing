@@ -3,8 +3,8 @@ import { Construct } from 'constructs';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+// import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
 
 export class NotifyAwsBillingStack extends Stack {
@@ -24,23 +24,6 @@ export class NotifyAwsBillingStack extends Stack {
       "lineAccessTokenPath"
     ) as string | "";
 
-    let appAccessInfo = {};
-    let secretArn: string = "";
-
-    if (slackWebhookUrlPath) {
-      secretArn = `arn:aws:secretsmanager:${region}:${accountId}:secret:${slackWebhookUrlPath}-*`;
-      appAccessInfo = {
-        SLACK_WEBHOOK_URL_PATH: slackWebhookUrlPath,
-      };
-    }
-
-    if (lineAccessTokenPath) {
-      secretArn = `arn:aws:secretsmanager:${region}:${accountId}:secret:${lineAccessTokenPath}-*`;
-      appAccessInfo = {
-        LINE_ACCESS_TOKEN_PATH: lineAccessTokenPath,
-      };
-    }
-
     // IAM Role
     const notifyAwsBillingRole = new iam.Role(this, "notifyAwsBillingRole", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
@@ -50,23 +33,55 @@ export class NotifyAwsBillingStack extends Stack {
           "service-role/AWSLambdaBasicExecutionRole"
         ),
       ],
-      inlinePolicies: {
-        NotifyAwsBilling: new iam.PolicyDocument({
+    });
+
+    // IAM Policy
+    notifyAwsBillingRole.attachInlinePolicy(
+      new iam.Policy(this, "GetBillingPolicy", {
+        policyName: `${sysName}-get-billing-policy`,
+        statements: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ["ce:GetCostAndUsage"],
+            resources: ["*"],
+          }),
+        ],
+      })
+    );
+
+    if (slackWebhookUrlPath) {
+      notifyAwsBillingRole.attachInlinePolicy(
+        new iam.Policy(this, "GetSlackWebhookUrlPolicy", {
+          policyName: `${sysName}-get-slack-webhook-url-policy`,
           statements: [
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
-              actions: ["ce:GetCostAndUsage"],
-              resources: ["*"],
+              actions: ["secretsmanager:GetSecretValue"],
+              resources: [
+                `arn:aws:secretsmanager:${region}:${accountId}:secret:${slackWebhookUrlPath}-*`,
+              ],
             }),
+          ],
+        })
+      );
+    }
+
+    if (lineAccessTokenPath) {
+      notifyAwsBillingRole.attachInlinePolicy(
+        new iam.Policy(this, "GetLineAccessTokenPolicy", {
+          policyName: `${sysName}-get-line-access-token-policy`,
+          statements: [
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
               actions: ["secretsmanager:GetSecretValue"],
-              resources: [secretArn],
+              resources: [
+                `arn:aws:secretsmanager:${region}:${accountId}:secret:${lineAccessTokenPath}-*`,
+              ],
             }),
           ],
-        }),
-      },
-    });
+        })
+      );
+    }
 
     // Lambda layer
     const paramsAndSecrets = lambda.ParamsAndSecretsLayerVersion.fromVersion(
@@ -77,13 +92,24 @@ export class NotifyAwsBillingStack extends Stack {
       }
     );
 
+    // Lambda environment variables
+    const appAccessInfo: { [key: string]: string } = {};
+
+    if (slackWebhookUrlPath) {
+      appAccessInfo.SLACK_WEBHOOK_URL_PATH = slackWebhookUrlPath;
+    }
+
+    if (lineAccessTokenPath) {
+      appAccessInfo.LINE_ACCESS_TOKEN_PATH = lineAccessTokenPath;
+    }
+
     // // Lambda function (Node.js)
     // const notifyAwsBillingFunction = new lambdaNodejs.NodejsFunction(
     //   this,
     //   "function",
     //   {
     //     functionName: `${sysName}-notify-aws-billing-function`,
-    //     entry: "lib/function-typescript/index.ts",
+    //     entry: "lib/function-typescript",
     //     runtime: lambda.Runtime.NODEJS_18_X,
     //     role: notifyAwsBillingRole,
     //     timeout: Duration.seconds(10),
