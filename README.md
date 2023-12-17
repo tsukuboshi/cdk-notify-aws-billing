@@ -1,4 +1,4 @@
-# linebot-aitutor
+# notify-aws-billing
 
 ## 概要
 
