@@ -3,6 +3,7 @@ export async function main(
   detail: string,
   url: string
 ): Promise<void> {
+  console.log("Post message to slack...");
   const payload = {
     text: title,
     blocks: [
