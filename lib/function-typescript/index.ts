@@ -9,9 +9,9 @@ exports.handler = async function (event: any, context: any) {
       // Get the total and per-service bill, and create a message
       let [title, detail] = await getBilling();
 
-      // Output the message to CloudWatch Logs
-      console.log(`title: ${title}`);
-      console.log(`detail: ${detail}`);
+      // Output the message to CloudWatch Logs (Only for debugging)
+      console.debug(`title: ${title}`);
+      console.debug(`detail: ${detail}`);
 
       // If the SLACK_WEBHOOK_URL_PATH environment variable is set
       if (process.env["SLACK_WEBHOOK_URL_PATH"]) {
