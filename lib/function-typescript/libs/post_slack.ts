@@ -1,54 +1,49 @@
-import * as https from 'https';
+export async function main(
+  title: string,
+  detail: string,
+  url: string
+): Promise<void> {
+  const payload = {
+    text: title,
+    blocks: [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: title,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: ":aws-logo:  *サービス別利用料金*",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: detail,
+        },
+      },
+      {
+        type: "divider",
+      },
+    ],
+  };
 
-export function main(title: string, detail: string, url: string): void {
-    const payload = {
-        "text": title,
-        "blocks": [
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": title
-                }
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": ":aws-logo:  *サービス別利用料金*"
-                }
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": detail
-                }
-            },
-            {
-                "type": "divider"
-            }
-        ]
-    };
-    const data = JSON.stringify(payload);
-
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(data)
-        }
-    };
-
-    const req = https.request(url, options, (res) => {
-        console.log(`statusCode: ${res.statusCode}`)
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
 
-    req.on('error', (error) => {
-        console.error(`Problem with request: ${error.message}`);
-    });
-
-    req.write(data);
-
-    req.end();
+    console.log(response.status);
+  } catch (error) {
+    console.error("Error in sending Slack notification:", error);
+  }
 }

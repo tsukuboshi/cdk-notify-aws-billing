@@ -1,122 +1,168 @@
-import { CostExplorer } from 'aws-sdk'
+import { CostExplorer } from "aws-sdk";
 
-const costExplorer = new CostExplorer({region: 'us-east-1'});
-
-export async function main(): Promise<[string, string]> {
-  const totalBilling = await getTotalBilling();
-  const serviceBillings = await getServiceBillings();
-  return getMessage(totalBilling, serviceBillings);
+type BillingInfo = {
+  start: string;
+  end: string;
+  billing: string;
 };
 
-async function getTotalBilling() {
+type ServiceBilling = {
+  serviceName: string;
+  billing: string;
+};
+
+export async function main(): Promise<[string, string]> {
+  console.log('Get billing information...');
+
+  const client = new CostExplorer({ region: "us-east-1" });
+
+  const totalBilling = await getTotalBilling(client);
+  const serviceBillings = await getServiceBillings(client);
+  const [title, detail] = getMessage(totalBilling, serviceBillings);
+  return [title, detail];
+}
+
+async function getTotalBilling(client: AWS.CostExplorer): Promise<BillingInfo> {
   const [startDate, endDate] = getTotalCostDateRange();
-  const params = {
-    TimePeriod: {
-      Start: startDate,
-      End: endDate
-    },
-    Granularity: 'MONTHLY',
-    Metrics: ['AmortizedCost']
-  };
 
-  const response = await costExplorer.getCostAndUsage(params).promise();
+  const response = await client
+    .getCostAndUsage({
+      TimePeriod: {
+        Start: startDate,
+        End: endDate,
+      },
+      Granularity: "MONTHLY",
+      Metrics: ["AmortizedCost"],
+    })
+    .promise();
 
-  if (!response.ResultsByTime || !response.ResultsByTime[0]) {
-    throw new Error('No ResultsByTime found');
+  if (!response.ResultsByTime || response.ResultsByTime.length === 0) {
+    throw new Error("No results returned from AWS Cost Explorer");
   }
 
-  const results = response.ResultsByTime[0];
+  const result = response.ResultsByTime[0];
 
-  if (!results.TimePeriod || !results.Total || !results.Total.AmortizedCost || results.Total.AmortizedCost.Amount === undefined) {
-    throw new Error('Missing necessary fields in results');
+  if (!result.TimePeriod || !result.Total || !result.Total.AmortizedCost) {
+    throw new Error("Invalid data structure in AWS Cost Explorer response");
+  }
+
+  const amount = result.Total.AmortizedCost.Amount;
+  if (amount === undefined) {
+    throw new Error("Amount is undefined in AWS Cost Explorer response");
   }
 
   return {
-    start: results.TimePeriod.Start,
-    end: results.TimePeriod.End,
-    billing: results.Total.AmortizedCost.Amount
+    start: result.TimePeriod.Start,
+    end: result.TimePeriod.End,
+    billing: amount,
   };
-};
+}
 
-async function getServiceBillings() {
+async function getServiceBillings(
+  client: AWS.CostExplorer
+): Promise<ServiceBilling[]> {
   const [startDate, endDate] = getTotalCostDateRange();
-  const params = {
-    TimePeriod: {
-      Start: startDate,
-      End: endDate
-    },
-    Granularity: 'MONTHLY',
-    Metrics: ['AmortizedCost'],
-    GroupBy: [{
-      Type: 'DIMENSION',
-      Key: 'SERVICE'
-    }]
-  };
 
-  const response = await costExplorer.getCostAndUsage(params).promise();
+  const response = await client
+    .getCostAndUsage({
+      TimePeriod: {
+        Start: startDate,
+        End: endDate,
+      },
+      Granularity: "MONTHLY",
+      Metrics: ["AmortizedCost"],
+      GroupBy: [{ Type: "DIMENSION", Key: "SERVICE" }],
+    })
+    .promise();
 
-  if (!response.ResultsByTime || !response.ResultsByTime[0] || !response.ResultsByTime[0].Groups) {
-    throw new Error('No ResultsByTime or Groups found');
+  if (!response.ResultsByTime || response.ResultsByTime.length === 0) {
+    throw new Error("No results returned from AWS Cost Explorer");
   }
 
-  const items = response.ResultsByTime[0].Groups;
+  const result = response.ResultsByTime[0];
 
-  return items.map((item: {Keys: Array<string>, Metrics: {AmortizedCost: {Amount: string}}}) => ({
-    serviceName: item.Keys[0],
-    billing: item.Metrics.AmortizedCost.Amount
-  }));
-};
+  if (!result.Groups) {
+    throw new Error("No group data in AWS Cost Explorer response");
+  }
 
-function getMessage(totalBilling: {start: string, end: string, billing: string}, serviceBillings: Array<{serviceName: string, billing: string}>): [string, string] {
-  const start = formatDate(totalBilling.start);
-  const end = formatDate(subtractOneDay(totalBilling.end));
-  const total = parseFloat(totalBilling.billing);
+  return result.Groups.map((item) => {
+    if (!item.Metrics || !item.Metrics.AmortizedCost || !item.Keys) {
+      throw new Error("Invalid data in AWS Cost Explorer response");
+    }
+    const amount = item.Metrics.AmortizedCost.Amount;
+    if (amount === undefined) {
+      throw new Error(
+        "Amount is undefined for a service in AWS Cost Explorer response"
+      );
+    }
+    return {
+      serviceName: item.Keys[0],
+      billing: amount,
+    };
+  });
+}
 
-  const title = `${start} - ${end}の請求額：${total.toFixed(2)} USD`;
+function getMessage(
+  totalBilling: BillingInfo,
+  serviceBillings: ServiceBilling[]
+): [string, string] {
+  const start = formatDate(new Date(totalBilling.start));
+  const endToday = new Date(totalBilling.end);
+  const endYesterday = formatDate(
+    new Date(endToday.getTime() - 24 * 60 * 60 * 1000)
+  );
 
-  const details = serviceBillings.map(item => {
-      const billing = parseFloat(item.billing);
-      if (billing === 0.0) {
-        return null;
-      }
-      return `・${item.serviceName}: ${billing.toFixed(2)} USD`;
-  }).filter(item => item !== null);
+  const total = parseFloat(totalBilling.billing).toFixed(2);
 
-  return [title, details.join('\n')];
-};
+  const title = `${start}～${endYesterday}の請求額：${total} USD`;
+
+  const details = serviceBillings
+    .filter((item) => parseFloat(item.billing) !== 0.0)
+    .map(
+      (item) =>
+        `　・${item.serviceName}: ${parseFloat(item.billing).toFixed(2)} USD`
+    );
+
+  return [title, details.join("\n")];
+}
+
+function formatDate(date: Date): string {
+  return `${padZero(date.getMonth() + 1)}/${padZero(date.getDate())}`;
+}
+
+function padZero(num: number): string {
+  return num < 10 ? `0${num}` : `${num}`;
+}
 
 function getTotalCostDateRange(): [string, string] {
   const startDate = getBeginOfMonth();
   const endDate = getToday();
 
-  if (new Date(startDate).getMonth() === new Date(endDate).getMonth()) {
-    const endOfMonth = subtractOneDay(startDate);
-    const startOfMonth = getBeginOfMonth(new Date(endOfMonth));
-    return [startOfMonth, endDate];
+  if (startDate === endDate) {
+    const endOfMonth = new Date(startDate);
+    endOfMonth.setDate(endOfMonth.getDate() - 1);
+    const beginOfMonth = new Date(
+      endOfMonth.getFullYear(),
+      endOfMonth.getMonth(),
+      1
+    );
+    return [beginOfMonth.toISOString().split("T")[0], endDate];
   }
-
   return [startDate, endDate];
-};
+}
 
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  return `${month}/${day}`;
-};
+function getBeginOfMonth(): string {
+  const now = new Date();
+  const beginOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  return beginOfMonth.toISOString().split("T")[0];
+}
 
-function subtractOneDay(dateString: string): string {
-  const date = new Date(dateString);
-  date.setDate(date.getDate() - 1);
-  return date.toISOString().split('T')[0];
-};
-
-function getBeginOfMonth(today: Date = new Date()): string {
-  const date = new Date(today.getFullYear(), today.getMonth(), 1);
-  return date.toISOString().split('T')[0];
-};
+// function getPrevDay(prev: number): string {
+//   const date = new Date();
+//   date.setDate(date.getDate() - prev);
+//   return date.toISOString().split("T")[0];
+// }
 
 function getToday(): string {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
-};
+  return new Date().toISOString().split("T")[0];
+}

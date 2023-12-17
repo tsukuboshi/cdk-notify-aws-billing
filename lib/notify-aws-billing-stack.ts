@@ -4,8 +4,8 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from "aws-cdk-lib/aws-lambda";
-// import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
-import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
+import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
+// import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
 
 export class NotifyAwsBillingStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -103,30 +103,14 @@ export class NotifyAwsBillingStack extends Stack {
       appAccessInfo.LINE_ACCESS_TOKEN_PATH = lineAccessTokenPath;
     }
 
-    // // Lambda function (Node.js)
-    // const notifyAwsBillingFunction = new lambdaNodejs.NodejsFunction(
-    //   this,
-    //   "function",
-    //   {
-    //     functionName: `${sysName}-notify-aws-billing-function`,
-    //     entry: "lib/function-typescript",
-    //     runtime: lambda.Runtime.NODEJS_18_X,
-    //     role: notifyAwsBillingRole,
-    //     timeout: Duration.seconds(10),
-    //     logRetention: 365,
-    //     environment: appAccessInfo,
-    //     paramsAndSecrets: paramsAndSecrets,
-    //   }
-    // );
-
-    // Lambda function (Python)
-    const notifyAwsBillingFunction = new lambdaPython.PythonFunction(
+    // Lambda function (Node.js)
+    const notifyAwsBillingFunction = new lambdaNodejs.NodejsFunction(
       this,
       "function",
       {
         functionName: `${sysName}-notify-aws-billing-function`,
-        entry: "lib/function-python",
-        runtime: lambda.Runtime.PYTHON_3_10,
+        entry: "lib/function-typescript/index.ts",
+        runtime: lambda.Runtime.NODEJS_18_X,
         role: notifyAwsBillingRole,
         timeout: Duration.seconds(10),
         logRetention: 365,
@@ -134,6 +118,22 @@ export class NotifyAwsBillingStack extends Stack {
         paramsAndSecrets: paramsAndSecrets,
       }
     );
+
+    // // Lambda function (Python)
+    // const notifyAwsBillingFunction = new lambdaPython.PythonFunction(
+    //   this,
+    //   "function",
+    //   {
+    //     functionName: `${sysName}-notify-aws-billing-function`,
+    //     entry: "lib/function-python",
+    //     runtime: lambda.Runtime.PYTHON_3_11,
+    //     role: notifyAwsBillingRole,
+    //     timeout: Duration.seconds(10),
+    //     logRetention: 365,
+    //     environment: appAccessInfo,
+    //     paramsAndSecrets: paramsAndSecrets,
+    //   }
+    // );
 
     // EventBridge rule
     new events.Rule(this, "notifyAwsBillingRule", {

@@ -1,42 +1,28 @@
-import * as http from 'http';
-import * as querystring from 'querystring';
+import { encode } from "querystring";
 
-const AWS_SESSION_TOKEN = process.env['AWS_SESSION_TOKEN'] || '';
+export async function main(secretName: string, secretKey: string) {
+  console.log("Get secrets...");
 
-function httpGet(url: string, params: any, headers: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const query = querystring.stringify(params);
-    const options = { headers };
-    http.get(`${url}?${query}`, options, (res) => {
-      let data = '';
+  const queryparams = encode({ secretId: secretName });
 
-      res.on('data', chunk => {
-        data += chunk;
-      });
+  const headers: Record<string, string> = {};
+  const awsSessionToken = process.env.AWS_SESSION_TOKEN;
+  if (awsSessionToken) {
+    headers["X-Aws-Parameters-Secrets-Token"] = awsSessionToken;
+  }
 
-      res.on('end', () => {
-        resolve(JSON.parse(data));
-      });
+  const secrets = await fetch(
+    `http://localhost:2773/secretsmanager/get?${queryparams}`,
+    { headers }
+  )
+    .then((res) => res.json())
+    .catch((err) => console.error(err));
 
-      res.on('error', error => {
-        reject(error);
-      });
-    });
-  });
-}
+  if (!secrets) {
+    return;
+  }
 
-export async function main(secretName: string, secretKey: string): Promise<string> {
-  const getSecretResponse = await httpGet(
-    'http://localhost:2773/secretsmanager/get',
-    {
-      secretId: secretName,
-    },
-    {
-      'X-Aws-Parameters-Secrets-Token': AWS_SESSION_TOKEN,
-    }
-  );
-
-  const secretString = JSON.parse(getSecretResponse.SecureString);
+  const secretString = JSON.parse(secrets.SecretString);
   const secretValue = secretString[secretKey];
   return secretValue;
-};
+}
