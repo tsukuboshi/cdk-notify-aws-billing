@@ -1,4 +1,4 @@
-# notify-aws-billing
+# cdk-notify-aws-billing
 
 ## 概要
 

@@ -109,7 +109,7 @@ export class NotifyAwsBillingStack extends Stack {
       "function",
       {
         functionName: `${sysName}-notify-aws-billing-function`,
-        entry: "lib/function-typescript/index.ts",
+        entry: "lib/function/index.ts",
         runtime: lambda.Runtime.NODEJS_18_X,
         role: notifyAwsBillingRole,
         logFormat: lambda.LogFormat.JSON,
@@ -121,22 +121,6 @@ export class NotifyAwsBillingStack extends Stack {
         paramsAndSecrets: paramsAndSecrets,
       }
     );
-
-    // // Lambda function (Python)
-    // const notifyAwsBillingFunction = new lambdaPython.PythonFunction(
-    //   this,
-    //   "function",
-    //   {
-    //     functionName: `${sysName}-notify-aws-billing-function`,
-    //     entry: "lib/function-python",
-    //     runtime: lambda.Runtime.PYTHON_3_11,
-    //     role: notifyAwsBillingRole,
-    //     timeout: Duration.seconds(10),
-    //     logRetention: 365,
-    //     environment: appAccessInfo,
-    //     paramsAndSecrets: paramsAndSecrets,
-    //   }
-    // );
 
     // EventBridge rule
     new events.Rule(this, "notifyAwsBillingRule", {
