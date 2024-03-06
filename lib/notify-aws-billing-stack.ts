@@ -1,10 +1,11 @@
-import { Duration, ScopedAws, Stack, StackProps } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import * as events from 'aws-cdk-lib/aws-events';
-import * as targets from 'aws-cdk-lib/aws-events-targets';
-import * as iam from 'aws-cdk-lib/aws-iam';
+import { Duration, ScopedAws, Stack, StackProps } from "aws-cdk-lib";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaNodejs from "aws-cdk-lib/aws-lambda-nodejs";
+import { Construct } from "constructs";
+import * as path from "path";
 // import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
 
 export class NotifyAwsBillingStack extends Stack {
@@ -15,13 +16,13 @@ export class NotifyAwsBillingStack extends Stack {
     const { accountId, region } = new ScopedAws(this);
     const sysName = this.node.tryGetContext("sysName") as string;
     const notifyDaysInterval = this.node.tryGetContext(
-      "notifyDaysInterval"
+      "notifyDaysInterval",
     ) as string;
     const slackWebhookUrlPath = this.node.tryGetContext(
-      "slackWebhookUrlPath"
+      "slackWebhookUrlPath",
     ) as string | "";
     const lineAccessTokenPath = this.node.tryGetContext(
-      "lineAccessTokenPath"
+      "lineAccessTokenPath",
     ) as string | "";
 
     // IAM Role
@@ -30,7 +31,7 @@ export class NotifyAwsBillingStack extends Stack {
       roleName: `${sysName}-notify-aws-billing-role`,
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "service-role/AWSLambdaBasicExecutionRole"
+          "service-role/AWSLambdaBasicExecutionRole",
         ),
       ],
     });
@@ -46,7 +47,7 @@ export class NotifyAwsBillingStack extends Stack {
             resources: ["*"],
           }),
         ],
-      })
+      }),
     );
 
     if (slackWebhookUrlPath) {
@@ -62,7 +63,7 @@ export class NotifyAwsBillingStack extends Stack {
               ],
             }),
           ],
-        })
+        }),
       );
     }
 
@@ -79,7 +80,7 @@ export class NotifyAwsBillingStack extends Stack {
               ],
             }),
           ],
-        })
+        }),
       );
     }
 
@@ -89,7 +90,7 @@ export class NotifyAwsBillingStack extends Stack {
       {
         cacheSize: 500,
         logLevel: lambda.ParamsAndSecretsLogLevel.DEBUG,
-      }
+      },
     );
 
     // Lambda environment variables
@@ -109,8 +110,8 @@ export class NotifyAwsBillingStack extends Stack {
       "function",
       {
         functionName: `${sysName}-notify-aws-billing-function`,
-        entry: "lib/function/index.ts",
-        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: path.join(__dirname, "function/index.ts"),
+        runtime: lambda.Runtime.NODEJS_20_X,
         role: notifyAwsBillingRole,
         logFormat: lambda.LogFormat.JSON,
         systemLogLevel: lambda.SystemLogLevel.INFO,
@@ -119,7 +120,7 @@ export class NotifyAwsBillingStack extends Stack {
         logRetention: 365,
         environment: appAccessInfo,
         paramsAndSecrets: paramsAndSecrets,
-      }
+      },
     );
 
     // EventBridge rule

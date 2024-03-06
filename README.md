@@ -15,13 +15,13 @@ Slack/LINEのいずれかに対して、メッセージ形式でAWS利用料金�
 - Slackの場合
 
 ``` bash
-cdk deploy \
+npx cdk deploy \
   -c slackWebhookUrlPath=/notify-aws-billing/slack-webhook-url
 ```
 
 - LINEの場合
 
 ``` bash
-cdk deploy \
+npx cdk deploy \
   -c lineAccessTokenPath=/notify-aws-billing/line-access-token
 ```

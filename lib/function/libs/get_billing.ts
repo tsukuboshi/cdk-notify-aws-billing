@@ -12,7 +12,7 @@ type ServiceBilling = {
 };
 
 export async function main(): Promise<[string, string]> {
-  console.log('Get billing information...');
+  console.log("Get billing information...");
 
   const client = new CostExplorer({ region: "us-east-1" });
 
@@ -59,7 +59,7 @@ async function getTotalBilling(client: AWS.CostExplorer): Promise<BillingInfo> {
 }
 
 async function getServiceBillings(
-  client: AWS.CostExplorer
+  client: AWS.CostExplorer,
 ): Promise<ServiceBilling[]> {
   const [startDate, endDate] = getTotalCostDateRange();
 
@@ -92,7 +92,7 @@ async function getServiceBillings(
     const amount = item.Metrics.AmortizedCost.Amount;
     if (amount === undefined) {
       throw new Error(
-        "Amount is undefined for a service in AWS Cost Explorer response"
+        "Amount is undefined for a service in AWS Cost Explorer response",
       );
     }
     return {
@@ -104,12 +104,12 @@ async function getServiceBillings(
 
 function getMessage(
   totalBilling: BillingInfo,
-  serviceBillings: ServiceBilling[]
+  serviceBillings: ServiceBilling[],
 ): [string, string] {
   const start = formatDate(new Date(totalBilling.start));
   const endToday = new Date(totalBilling.end);
   const endYesterday = formatDate(
-    new Date(endToday.getTime() - 24 * 60 * 60 * 1000)
+    new Date(endToday.getTime() - 24 * 60 * 60 * 1000),
   );
 
   const total = parseFloat(totalBilling.billing).toFixed(2);
@@ -120,7 +120,7 @@ function getMessage(
     .filter((item) => parseFloat(item.billing) !== 0.0)
     .map(
       (item) =>
-        `　・${item.serviceName}: ${parseFloat(item.billing).toFixed(2)} USD`
+        `・${item.serviceName}: ${parseFloat(item.billing).toFixed(2)} USD`,
     );
 
   return [title, details.join("\n")];
@@ -144,7 +144,7 @@ function getTotalCostDateRange(): [string, string] {
     const beginOfMonth = new Date(
       endOfMonth.getFullYear(),
       endOfMonth.getMonth(),
-      1
+      1,
     );
     return [beginOfMonth.toISOString().split("T")[0], endDate];
   }

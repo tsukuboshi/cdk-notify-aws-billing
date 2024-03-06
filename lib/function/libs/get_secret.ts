@@ -13,7 +13,7 @@ export async function main(secretName: string, secretKey: string) {
 
   const secrets = await fetch(
     `http://localhost:2773/secretsmanager/get?${queryparams}`,
-    { headers }
+    { headers },
   )
     .then((res) => res.json())
     .catch((err) => console.error(err));

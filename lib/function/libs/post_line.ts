@@ -1,7 +1,7 @@
 export async function main(
   title: string,
   detail: string,
-  token: string
+  token: string,
 ): Promise<void> {
   console.log("Post message to line...");
   const url = "https://notify-api.line.me/api/notify";

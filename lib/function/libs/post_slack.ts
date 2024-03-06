@@ -1,7 +1,7 @@
 export async function main(
   title: string,
   detail: string,
-  url: string
+  url: string,
 ): Promise<void> {
   console.log("Post message to slack...");
   const payload = {
